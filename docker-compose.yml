@@ -1,0 +1,38 @@
+services:
+  # La "fuente de la Verdad" (Consistencia ACID)
+  postgres:
+    image: postgres:18-alpine
+    container_name: lab-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: lab_db
+    ports:
+      - "5432:5432"
+  
+  pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: lab-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@lab.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "80:80"
+    depends_on:
+      - postgres
+  
+  # El "Escudo" de Alta Velocidad (Idempotencia y Cache)
+  redis:
+    image: redis:8-alpine
+    container_name: lab-redis
+    ports:
+      - "6379:6379"
+
+  redisinsight:
+    image: redis/redisinsight:3.4
+    container_name: lab-redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+  
