@@ -1,46 +1,38 @@
 # lab-api
 
-API backend construida con NestJS para experimentar con una arquitectura base usando PostgreSQL y Redis.
+Laboratorio backend con NestJS para simular race conditions en pagos y comparar estrategias de mitigación a nivel aplicación.
 
-## Objetivo del proyecto
+## Stack
 
-`lab-api` sirve como laboratorio para:
+- NestJS 11 + TypeScript
+- TypeORM + PostgreSQL
+- Redis (infra preparada para escenarios siguientes)
 
-- conectar NestJS con PostgreSQL mediante TypeORM `DataSource`
-- preparar una base para cache/idempotencia con Redis
-- tener un entorno local listo con Docker para desarrollo rapido
-
-## Stack tecnologico
-
-- Node.js + TypeScript
-- NestJS 11
-- PostgreSQL 18
-- Redis 8
-- Docker Compose (servicios de infraestructura)
-
-## Estructura principal
+## Arquitectura actual
 
 ```text
-lab-api/
-  src/
-    config/
-      database.config.ts      # mapea variables de entorno
-    database/
-      database.module.ts      # modulo de base de datos
-      database.service.ts     # inicializa/cierra DataSource
-    app.module.ts             # modulo raiz
-    main.ts                   # arranque del servidor HTTP
+src/
+  app.module.ts
+  config/database.config.ts
+  database/database.module.ts
+  modules/payments-race/
+    controller/
+    domain/
+    infrastructure/
+    scenarios/problem/
 ```
 
-## Requisitos previos
+Lectura arquitectónica (estado actual):
 
-- Node.js 20+ (recomendado)
-- npm 10+ (o equivalente)
-- Docker y Docker Compose (opcional pero recomendado para DB/Redis)
+- `AppModule` funciona como composition root: inicializa configuración global, monta la infraestructura de persistencia y registra el módulo vertical de negocio.
+- `modules/payments-race` está organizado por slice funcional (controller/domain/infrastructure/scenario), lo que desacopla el experimento de race condition del resto del sistema.
+- `controller/scenario-router.service.ts` centraliza el dispatch del escenario; hoy solo resuelve `problem`, pero define el punto de extensión para `idempotency`, `distributed-lock` e híbridos sin multiplicar endpoints.
+- `infrastructure/postgres/user.repository.ts` encapsula acceso a TypeORM para evitar que la lógica de escenario dependa directamente del `Repository<User>`.
+- `infrastructure/redis/*` está declarado como contrato de integración para estrategias futuras; no ejecuta lógica en runtime por ahora.
 
-## Configuracion de entorno
+## Configuración
 
-Actualmente el proyecto lee estas variables desde `lab-api/.env`:
+Variables activas en `.env`:
 
 ```env
 DATABASE_DIALECT=postgres
@@ -49,87 +41,46 @@ DATABASE_PORT=5432
 DATABASE_USERNAME=admin
 DATABASE_PASSWORD=admin123
 DATABASE_NAME=lab_db
+DATABASE_RESET_ON_BOOT=true
 ```
 
-> Nota: el puerto HTTP de la API se toma de `PORT`; si no existe, usa `3000`.
+Notas técnicas:
 
-## Arranque rapido
+- `ConfigModule` se registra como global, habilitando acceso transversal a `ConfigService` sin imports repetidos por módulo.
+- `database.config.ts` normaliza variables de entorno bajo el namespace `database` y permite inyección tipada en `DatabaseModule`.
+- `DatabaseModule` usa `TypeOrmModule.forRootAsync(...)` para resolver configuración en runtime (host/port/credenciales) desde `.env`.
+- `autoLoadEntities: true` evita acoplar la lista de entidades en la raíz; cada módulo registra sus entidades con `forFeature(...)`.
+- `synchronize: true` mantiene sincronía esquema-entidad en contexto de laboratorio; no es una recomendación de producción.
+- `dropSchema` queda gobernado por `DATABASE_RESET_ON_BOOT` para controlar reinicios limpios del esquema durante pruebas.
 
-### 1) Levantar infraestructura (Postgres + Redis)
+## Seed de laboratorio
 
-Desde la raiz del repo (`backend-lab/`):
+En `main.ts` se hace seed determinístico al boot:
 
-```bash
-docker compose up -d
+- limpieza de tabla `user` (`repository.clear()`)
+- inserción de 3 usuarios UUID con balance inicial `1000`
+
+Esto garantiza corridas reproducibles para pruebas de concurrencia.
+
+## Endpoint disponible
+
+- `POST /payments?scenario=problem`
+
+Body:
+
+```json
+{
+  "userId": "11111111-1111-1111-1111-111111111111",
+  "amount": 300
+}
 ```
 
-Servicios expuestos por defecto:
+`scenario` default: `problem`.
 
-- PostgreSQL: `localhost:5432`
-- pgAdmin: `http://localhost:80`
-- Redis: `localhost:6379`
-- RedisInsight: `http://localhost:5540`
-
-### 2) Instalar dependencias del API
-
-Desde `lab-api/`:
+## Comandos
 
 ```bash
 npm install
-```
-
-### 3) Ejecutar el backend
-
-```bash
-# desarrollo (watch)
 npm run start:dev
-
-# ejecucion normal
-npm run start
+npm run build
 ```
-
-Al iniciar correctamente deberias ver algo como:
-
-```text
-Application running on: http://localhost:3000
-```
-
-## Scripts utiles
-
-- `npm run build`: compila TypeScript a `dist/`
-- `npm run start`: inicia la app
-- `npm run start:dev`: inicia con recarga en caliente
-- `npm run lint`: ejecuta ESLint con autofix
-- `npm run test`: pruebas unitarias
-- `npm run test:e2e`: pruebas end-to-end
-- `npm run test:cov`: cobertura de pruebas
-
-## Conexion a base de datos
-
-El `DatabaseService`:
-
-- crea un `DataSource` de TypeORM con configuracion de `ConfigService`
-- inicializa la conexion al arrancar el modulo (`onModuleInit`)
-- cierra la conexion al detenerse la app (`onModuleDestroy`)
-
-Esto deja la base lista para agregar entidades, repositorios y migraciones en siguientes iteraciones.
-
-## Flujo recomendado de desarrollo
-
-1. Levanta la infraestructura con Docker.
-2. Ejecuta `npm run start:dev` en `lab-api/`.
-3. Crea entidades/migraciones segun nuevas features.
-4. Corre `npm run lint` y `npm run test` antes de cerrar cambios.
-
-## Troubleshooting rapido
-
-- **No conecta a Postgres**: verifica que `docker compose ps` muestre `lab-postgres` en estado healthy/running y que las credenciales de `.env` coincidan.
-- **Puerto ocupado**: cambia `PORT` para la API o ajusta puertos en `docker-compose.yml`.
-- **Cambios no se reflejan**: confirma que estas usando `npm run start:dev`.
-
-## Proximos pasos sugeridos
-
-- agregar entidades TypeORM y migraciones
-- documentar endpoints con Swagger
-- introducir modulo de cache con Redis
-- agregar pipeline de CI (lint + test)

@@ -6,4 +6,5 @@ export default registerAs('database', () => ({
     username: process.env.DATABASE_USERNAME,
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
+    resetOnBoot: process.env.DATABASE_RESET_ON_BOOT === 'true',
 }));
