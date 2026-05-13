@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import databaseConfig from './config/database.config';
 
+import { LostUpdateModule } from './modules/lost-update/lost-update.module';
 import { DuplicateExecutionModule } from './modules/duplicate-execution/duplicate-execution.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { DuplicateExecutionModule } from './modules/duplicate-execution/duplicat
       load: [databaseConfig],
     }),
     DatabaseModule,
+    LostUpdateModule,
     DuplicateExecutionModule,
   ],
 })
