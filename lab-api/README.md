@@ -1,86 +1,56 @@
 # lab-api
 
-Laboratorio backend con NestJS para simular race conditions en pagos y comparar estrategias de mitigación a nivel aplicación.
+Backend Failure Lab: fallos de concurrencia, TOCTOU, doble gasto, ejecución duplicada y operaciones zombie. Cada módulo tiene su propio `README.md` con fallo, daño, endpoints y resultado esperado.
+
+## Mapa de módulos
+
+| Módulo | Mitigaciones / evolución |
+|--------|--------------------------|
+| [Lost Update](src/modules/lost-update/README.md) | atomic update |
+| [TOCTOU](src/modules/toctou/README.md) | conditional update |
+| [Double Spending](src/modules/double-spending/README.md) | atomic balance update → transaction |
+| [Duplicate Execution](src/modules/duplicate-execution/README.md) | persistent idempotency → operation states |
+| [Zombie Operation](src/modules/zombie-operation/README.md) | expiration → retry policy |
 
 ## Stack
 
-- NestJS 11 + TypeScript
-- TypeORM + PostgreSQL
-- Redis (infra preparada para escenarios siguientes)
+- NestJS 11 + TypeScript  
+- TypeORM + PostgreSQL (`synchronize`, `DATABASE_RESET_ON_BOOT` para entorno de laboratorio)  
+- Redis en Docker (opcional; sin uso obligatorio en estos escenarios)
 
-## Arquitectura actual
-
-```text
-src/
-  app.module.ts
-  config/database.config.ts
-  database/database.module.ts
-  modules/payments-race/
-    controller/
-    domain/
-    infrastructure/
-    scenarios/problem/
-```
-
-Lectura arquitectónica (estado actual):
-
-- `AppModule` funciona como composition root: inicializa configuración global, monta la infraestructura de persistencia y registra el módulo vertical de negocio.
-- `modules/payments-race` está organizado por slice funcional (controller/domain/infrastructure/scenario), lo que desacopla el experimento de race condition del resto del sistema.
-- `controller/scenario-router.service.ts` centraliza el dispatch del escenario; hoy solo resuelve `problem`, pero define el punto de extensión para `idempotency`, `distributed-lock` e híbridos sin multiplicar endpoints.
-- `infrastructure/postgres/user.repository.ts` encapsula acceso a TypeORM para evitar que la lógica de escenario dependa directamente del `Repository<User>`.
-- `infrastructure/redis/*` está declarado como contrato de integración para estrategias futuras; no ejecuta lógica en runtime por ahora.
-
-## Configuración
-
-Variables activas en `.env`:
-
-```env
-DATABASE_DIALECT=postgres
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USERNAME=admin
-DATABASE_PASSWORD=admin123
-DATABASE_NAME=lab_db
-DATABASE_RESET_ON_BOOT=true
-```
-
-Notas técnicas:
-
-- `ConfigModule` se registra como global, habilitando acceso transversal a `ConfigService` sin imports repetidos por módulo.
-- `database.config.ts` normaliza variables de entorno bajo el namespace `database` y permite inyección tipada en `DatabaseModule`.
-- `DatabaseModule` usa `TypeOrmModule.forRootAsync(...)` para resolver configuración en runtime (host/port/credenciales) desde `.env`.
-- `autoLoadEntities: true` evita acoplar la lista de entidades en la raíz; cada módulo registra sus entidades con `forFeature(...)`.
-- `synchronize: true` mantiene sincronía esquema-entidad en contexto de laboratorio; no es una recomendación de producción.
-- `dropSchema` queda gobernado por `DATABASE_RESET_ON_BOOT` para controlar reinicios limpios del esquema durante pruebas.
-
-## Seed de laboratorio
-
-En `main.ts` se hace seed determinístico al boot:
-
-- limpieza de tabla `user` (`repository.clear()`)
-- inserción de 3 usuarios UUID con balance inicial `1000`
-
-Esto garantiza corridas reproducibles para pruebas de concurrencia.
-
-## Endpoint disponible
-
-- `POST /payments?scenario=problem`
-
-Body:
-
-```json
-{
-  "userId": "11111111-1111-1111-1111-111111111111",
-  "amount": 300
-}
-```
-
-`scenario` default: `problem`.
-
-## Comandos
+## Arranque
 
 ```bash
 npm install
 npm run start:dev
-npm run build
 ```
+
+Variables típicas: `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `DATABASE_NAME`, `DATABASE_RESET_ON_BOOT`.
+
+## k6
+
+Scripts en `k6/`. Por defecto la base es `http://host.docker.internal:3000` (API en el host, puerto 3000). Otra base:
+
+```bash
+BASE_URL=http://localhost:3000 k6 run k6/toctou/broken.js
+```
+
+Desde `lab-api` con Docker (Linux incluye `host-gateway`):
+
+```bash
+docker run --rm -i --add-host=host.docker.internal:host-gateway \
+  -v "$(pwd)/k6:/scripts" -e BASE_URL=http://host.docker.internal:3000 \
+  grafana/k6 run /scripts/toctou/broken.js
+```
+
+| Carpeta | Script | Uso |
+|---------|--------|-----|
+| `lost-update/` | `problem.js`, `atomic-update.js` | burst 2 VU — broken vs atomic |
+| `toctou/` | `broken.js`, `conditional-update.js` | burst — TOCTOU vs update condicional |
+| `double-spending/` | `broken.js`, `atomic-balance-update.js`, `transaction.js` | burst — RMW vs atómico vs TX |
+| `duplicate-execution/` | `problem.js`, `idempotent-execution.js`, `idempotency-crash.js`, `states.js` | burst / códigos esperados en crash |
+| `zombie-operation/` | `expiration-resolve-burst.js` | 2 VU mismo `operationKey` |
+| `zombie-operation/` | `retry-after-expire.js` | 1 VU: resolve → sleep 16s → retry (lease 15s) |
+| `zombie-operation/` | `retry-conflict-while-lease-active.js` | 1 VU: resolve → retry inmediato → espera **409** |
+
+`k6/shared/http.js` acepta **200 y 201** por defecto; el script de crash de duplicate-execution admite también 4xx/5xx típicos del escenario.

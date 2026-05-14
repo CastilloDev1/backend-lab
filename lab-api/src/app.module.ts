@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import databaseConfig from './config/database.config';
-
-import { LostUpdateModule } from './modules/lost-update/lost-update.module';
-import { DuplicateExecutionModule } from './modules/duplicate-execution/duplicate-execution.module';
+import { DuplicateExecutionModule } from './modules/04-duplicate-execution/duplicate-execution.module';
+import { LostUpdateModule } from './modules/01-lost-update/lost-update.module';
+import { ToctouModule } from './modules/02-toctou/toctou.module';
+import { DoubleSpendingModule } from './modules/03-double-spending/double-spending.module';
 
 @Module({
   imports: [
@@ -15,6 +16,8 @@ import { DuplicateExecutionModule } from './modules/duplicate-execution/duplicat
     }),
     DatabaseModule,
     LostUpdateModule,
+    ToctouModule,
+    DoubleSpendingModule,
     DuplicateExecutionModule,
   ],
 })

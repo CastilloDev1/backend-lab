@@ -4,12 +4,10 @@ import { burstSameTimeOptions } from '../shared/options.js';
 export const options = burstSameTimeOptions;
 
 export default function () {
-  const url = `${getBaseUrl()}/duplicate-execution/broken/pay`;
+  const url = `${getBaseUrl()}/toctou/broken/consume`;
 
-  const payload = {
-    accountId: 1,
-    amount: 100,
-  };
-
-  postJson(url, payload);
+  postJson(url, {
+    resourceId: 1,
+    amount: 1,
+  });
 }
