@@ -2,10 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import databaseConfig from './config/database.config';
-import { DuplicateExecutionModule } from './modules/04-duplicate-execution/duplicate-execution.module';
+
+//Modulos de Problemas concurrentes
 import { LostUpdateModule } from './modules/01-lost-update/lost-update.module';
 import { ToctouModule } from './modules/02-toctou/toctou.module';
 import { DoubleSpendingModule } from './modules/03-double-spending/double-spending.module';
+
+//Modulos de Escenarios evolutivos
+import { PaymentLabModule } from './modules/04-payment-lab/payment-lab.module';
 
 @Module({
   imports: [
@@ -18,7 +22,7 @@ import { DoubleSpendingModule } from './modules/03-double-spending/double-spendi
     LostUpdateModule,
     ToctouModule,
     DoubleSpendingModule,
-    DuplicateExecutionModule,
+    PaymentLabModule,
   ],
 })
 export class AppModule {}

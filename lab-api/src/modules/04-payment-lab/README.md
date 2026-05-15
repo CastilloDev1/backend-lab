@@ -1,0 +1,1 @@
+Un sistema de pagos que se rompe progresivamente hasta obligarnos a mejorar la estrategia.

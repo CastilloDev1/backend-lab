@@ -9,8 +9,7 @@ Backend Failure Lab: fallos de concurrencia, TOCTOU, doble gasto, ejecución dup
 | [Lost Update](src/modules/lost-update/README.md) | atomic update |
 | [TOCTOU](src/modules/toctou/README.md) | conditional update |
 | [Double Spending](src/modules/double-spending/README.md) | atomic balance update → transaction |
-| [Duplicate Execution](src/modules/duplicate-execution/README.md) | persistent idempotency → operation states |
-| [Zombie Operation](src/modules/zombie-operation/README.md) | expiration → retry policy |
+| [Payment Lab](src/modules/04-payment-lab/README.md) | duplicate execution (evolutivo) |
 
 ## Stack
 
@@ -48,9 +47,6 @@ docker run --rm -i --add-host=host.docker.internal:host-gateway \
 | `lost-update/` | `problem.js`, `atomic-update.js` | burst 2 VU — broken vs atomic |
 | `toctou/` | `broken.js`, `conditional-update.js` | burst — TOCTOU vs update condicional |
 | `double-spending/` | `broken.js`, `atomic-balance-update.js`, `transaction.js` | burst — RMW vs atómico vs TX |
-| `duplicate-execution/` | `problem.js`, `idempotent-execution.js`, `idempotency-crash.js`, `states.js` | burst / códigos esperados en crash |
-| `zombie-operation/` | `expiration-resolve-burst.js` | 2 VU mismo `operationKey` |
-| `zombie-operation/` | `retry-after-expire.js` | 1 VU: resolve → sleep 16s → retry (lease 15s) |
-| `zombie-operation/` | `retry-conflict-while-lease-active.js` | 1 VU: resolve → retry inmediato → espera **409** |
+| `payment-lab/` | `stage-01-broken.js` | burst 2 VU — misma `externalReference` → duplicate execution |
 
-`k6/shared/http.js` acepta **200 y 201** por defecto; el script de crash de duplicate-execution admite también 4xx/5xx típicos del escenario.
+`k6/shared/http.js` acepta **200 y 201** por defecto.
