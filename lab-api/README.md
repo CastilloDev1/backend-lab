@@ -47,6 +47,7 @@ docker run --rm -i --add-host=host.docker.internal:host-gateway \
 | `lost-update/` | `problem.js`, `atomic-update.js` | burst 2 VU — broken vs atomic |
 | `toctou/` | `broken.js`, `conditional-update.js` | burst — TOCTOU vs update condicional |
 | `double-spending/` | `broken.js`, `atomic-balance-update.js`, `transaction.js` | burst — RMW vs atómico vs TX |
-| `payment-lab/` | `stage-01-broken.js` | burst 2 VU — misma `externalReference` → duplicate execution |
+| `payment-lab/` | `payments.js` | burst 2 VU — `POST /payment-lab/payments` (misma `externalReference`) |
+| `payment-lab/` | `process-outbox-once.js` | 5 VU × 2 iter — `POST /payment-lab/outbox/process-once` (tras crear pagos) |
 
 `k6/shared/http.js` acepta **200 y 201** por defecto.
