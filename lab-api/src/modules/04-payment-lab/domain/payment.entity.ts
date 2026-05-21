@@ -12,7 +12,7 @@ export class Payment {
     @Column({ type: 'integer' })
     amount: number;
 
-    @Column({ name: 'external_reference', type: 'varchar', length: 120 })
+    @Column({ name: 'external_reference', type: 'varchar', length: 120, unique: true })
     externalReference: string;
 
     @CreateDateColumn({ name: 'created_at' })

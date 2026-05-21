@@ -5,6 +5,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "./domain/account.entity";
 import { Payment } from "./domain/payment.entity";
 import { OutBoxEvent } from "./domain/outbox-event.entity";
+import { ProcessedEvent } from "./domain/processed_event";
 
 import { PaymentLabController } from "./controller/payment-lab.controller";
 import { AccountSeederService } from "./infraestructure/seed/account-seeder";
@@ -12,7 +13,7 @@ import { CreatePaymentOutboxPreviewUseCase } from "./core/create-payment-outbox-
 import { ProcessOutboxEventsWorker } from "./core/process-outbox-events.worker";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Account, Payment, OutBoxEvent])],
+    imports: [TypeOrmModule.forFeature([Account, Payment, OutBoxEvent, ProcessedEvent])],
     controllers: [PaymentLabController],
     providers: [
         AccountSeederService,

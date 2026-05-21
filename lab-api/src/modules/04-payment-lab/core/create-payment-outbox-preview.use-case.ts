@@ -22,7 +22,7 @@ export class CreatePaymentOutboxPreviewUseCase {
         await queryRunner.startTransaction();
 
         try {
-            const account = await this.dataSource.query(
+            const account = await queryRunner.query(
                 `
                 SELECT id
                 FROM account
@@ -35,7 +35,7 @@ export class CreatePaymentOutboxPreviewUseCase {
                 throw new NotFoundException('Account not found');
             }
 
-            const payments = await this.dataSource.query(
+            const payments = await queryRunner.query(
                 `
                 INSERT INTO payment (
                     account_id,
