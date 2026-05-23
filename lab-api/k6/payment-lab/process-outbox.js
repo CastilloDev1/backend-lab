@@ -3,10 +3,10 @@ import { postJson, getBaseUrl } from '../shared/http.js';
 export const options = {
   scenarios: {
     process_outbox: {
-      executor: 'per-vu-iterations',
-      vus: 1,
-      iterations: 2,
-      maxDuration: '30s',
+      executor: 'shared-iterations',
+      vus: 30,
+      iterations: 10000,
+      maxDuration: '2m',
     },
   },
 };

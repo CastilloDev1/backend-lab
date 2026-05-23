@@ -5,13 +5,14 @@ import { DataSource } from 'typeorm';
 export class ProcessOutboxEventsWorker {
   constructor(private readonly dataSource: DataSource) { }
 
-  async processOnce() {
+  async processOnce(limit: number) {
 
     // 1. Recuperar eventos atascados
     await this.recoverStuckEvents();
 
     // 2. Reclamar evento normal
-    const event = await this.claimNextEvent();
+    const events = await this.claimNextEvents(limit);
+    const event = events[0] ?? null;
 
     if (!event) {
       return {
@@ -45,7 +46,7 @@ export class ProcessOutboxEventsWorker {
     );
   }
 
-  private async claimNextEvent() {
+  private async claimNextEvents(limit: number) {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -53,7 +54,7 @@ export class ProcessOutboxEventsWorker {
 
 
     try {
-      const [rows, rowCount] = await queryRunner.query(
+      const [rows] = await queryRunner.query(
         `
         UPDATE outbox_event
         SET 
@@ -61,20 +62,21 @@ export class ProcessOutboxEventsWorker {
           locked_at = NOW(),
           attempts = attempts + 1,
           last_error = NULL
-        WHERE id = (
+        WHERE id IN (
           SELECT id
           FROM outbox_event
           WHERE status = 'PENDING'
           ORDER BY id ASC
-          LIMIT 1
+          LIMIT $1
           FOR UPDATE SKIP LOCKED
         )
         RETURNING id, event_type, payload, status, attempts
         `,
+        [limit],
       );
 
       await queryRunner.commitTransaction();
-      return rows[0] ?? null;
+      return rows ?? [];
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -166,5 +168,36 @@ export class ProcessOutboxEventsWorker {
       `,
       [eventId, message],
     );
+  }
+
+  async processBatch(limit = 10) {
+    await this.recoverStuckEvents();
+
+    const events = await this.claimNextEvents(limit);
+  
+    if (events.length === 0) {
+      return {
+        message: 'No pending events',
+        processed: 0,
+      };
+    }
+  
+    let processed = 0;
+  
+    for (const event of events) {
+      try {
+        await this.processPaymentEvent(event);
+        await this.markAsProcessed(event.id);
+        processed++;
+      } catch (error) {
+        await this.markFailedOrRetry(event.id, error);
+      }
+    }
+  
+    return {
+      message: 'Outbox batch processed',
+      claimed: events.length,
+      processed,
+    };
   }
 }

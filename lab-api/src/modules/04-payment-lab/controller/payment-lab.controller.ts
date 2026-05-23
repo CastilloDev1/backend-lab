@@ -23,6 +23,11 @@ export class PaymentLabController {
   
     @Post('outbox/process-once')
     processOutboxOnce() {
-      return this.processOutboxEventsWorker.processOnce();
+      return this.processOutboxEventsWorker.processOnce(1);
+    }
+
+    @Post('outbox/process-batch')
+    processOutboxBatch() {
+      return this.processOutboxEventsWorker.processBatch(10);
     }
 }
