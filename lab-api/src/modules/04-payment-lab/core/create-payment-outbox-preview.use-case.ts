@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { DataSource } from "typeorm";
+import { RabbitmqPublisher } from "./rabbitmq-publisher";
 
 type CreatePaymentOutboxPreviewInput = {
     accountId: number;
@@ -11,7 +12,8 @@ type CreatePaymentOutboxPreviewInput = {
 export class CreatePaymentOutboxPreviewUseCase {
 
     constructor(
-        private readonly dataSource: DataSource
+        private readonly dataSource: DataSource,
+        private readonly rabbitmqPublisher: RabbitmqPublisher
     ){}
 
     async execute(input: CreatePaymentOutboxPreviewInput){
@@ -50,7 +52,7 @@ export class CreatePaymentOutboxPreviewUseCase {
 
             const payment = payments[0];
 
-            await queryRunner.query(
+            const [outboxEvent] = await queryRunner.query(
                 `
                 INSERT INTO outbox_event (
                     event_type,
@@ -58,6 +60,7 @@ export class CreatePaymentOutboxPreviewUseCase {
                     status
                 )
                 VALUES ($1, $2, $3)
+                RETURNING id
                 `,
                 [
                     'PAYMENT_CREATED', 
@@ -72,6 +75,8 @@ export class CreatePaymentOutboxPreviewUseCase {
             );
 
             await queryRunner.commitTransaction();
+
+            await this.rabbitmqPublisher.publishOutboxEvent(outboxEvent.id.toString());
 
             return {
                 message: 'Payment created and outbox event created',

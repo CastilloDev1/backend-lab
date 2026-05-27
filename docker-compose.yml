@@ -20,19 +20,14 @@ services:
       - "80:80"
     depends_on:
       - postgres
-  
-  # El "Escudo" de Alta Velocidad (Idempotencia y Cache)
-  redis:
-    image: redis:8-alpine
-    container_name: lab-redis
-    ports:
-      - "6379:6379"
 
-  redisinsight:
-    image: redis/redisinsight:3.4
-    container_name: lab-redisinsight
+  rabbitmq:
+    image: rabbitmq:4.0-management-alpine
+    container_name: lab-rabbitmq
     ports:
-      - "5540:5540"
-    depends_on:
-      - redis
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
   

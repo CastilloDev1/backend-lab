@@ -1,0 +1,1 @@
+export const RABBITMQ_URL = 'amqp://admin:admin123@localhost:5672';

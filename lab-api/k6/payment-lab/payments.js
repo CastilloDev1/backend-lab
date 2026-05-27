@@ -6,8 +6,8 @@ export const options = {
   scenarios: {
     payments: {
       executor: 'shared-iterations',
-      vus: 30,
-      iterations: 10000,
+      vus: 1,
+      iterations: 30,
       maxDuration: '2m',
     },
   },

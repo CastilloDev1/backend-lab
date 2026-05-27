@@ -11,6 +11,8 @@ import { PaymentLabController } from "./controller/payment-lab.controller";
 import { AccountSeederService } from "./infraestructure/seed/account-seeder";
 import { CreatePaymentOutboxPreviewUseCase } from "./core/create-payment-outbox-preview.use-case";
 import { ProcessOutboxEventsWorker } from "./core/process-outbox-events.worker";
+import { RabbitmqPublisher } from "./core/rabbitmq-publisher";
+import { RabbitmqConsumer } from "./core/rabbitmq-consumer";
 
 @Module({
     imports: [TypeOrmModule.forFeature([Account, Payment, OutBoxEvent, ProcessedEvent])],
@@ -19,6 +21,8 @@ import { ProcessOutboxEventsWorker } from "./core/process-outbox-events.worker";
         AccountSeederService,
         CreatePaymentOutboxPreviewUseCase,
         ProcessOutboxEventsWorker,
+        RabbitmqPublisher,
+        RabbitmqConsumer,
     ]
 })
 export class PaymentLabModule {}
