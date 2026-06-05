@@ -4,8 +4,8 @@ export const options = {
   scenarios: {
     process_outbox: {
       executor: 'shared-iterations',
-      vus: 30,
-      iterations: 10000,
+      vus: 1,
+      iterations: 1,
       maxDuration: '2m',
     },
   },

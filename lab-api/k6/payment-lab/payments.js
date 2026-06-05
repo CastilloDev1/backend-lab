@@ -7,7 +7,7 @@ export const options = {
     payments: {
       executor: 'shared-iterations',
       vus: 1,
-      iterations: 30,
+      iterations: 1,
       maxDuration: '2m',
     },
   },

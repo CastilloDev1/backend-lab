@@ -18,6 +18,7 @@ export class RabbitmqPublisher {
         channel.sendToQueue(
             this.QUEUE_NAME,
             Buffer.from(message),
+            { persistent: true }
         );
 
         console.log(`Outbox event ${outboxEventId} published to queue ${this.QUEUE_NAME}`);

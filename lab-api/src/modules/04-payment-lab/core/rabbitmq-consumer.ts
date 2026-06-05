@@ -19,8 +19,24 @@ export class RabbitmqConsumer implements OnModuleInit {
     constructor(
         private readonly dataSource: DataSource,
     ) { }
+
     async onModuleInit() {
         await this.start();
+    }
+
+    private async startWithRetry() {
+        while (true) {
+            try {
+                await this.start();
+                console.log('RabbitMQ consumer started');
+                break;
+            } catch (error) {
+                console.error('RabbitMQ consumer start failed', error.message);
+                console.log('Retrying in 5 seconds...');
+
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
     }
 
     private async start() {
@@ -28,6 +44,13 @@ export class RabbitmqConsumer implements OnModuleInit {
 
         await channel.assertQueue(this.QUEUE_NAME, {
             durable: true,
+        });
+
+        channel.on('close', () => {
+            console.log('RabbitMQ consumer channel closed');
+            setTimeout(() => {
+                this.startWithRetry();
+            }, 5000);
         });
 
         await channel.consume(this.QUEUE_NAME, async (message) => {
@@ -85,7 +108,7 @@ export class RabbitmqConsumer implements OnModuleInit {
 
             await queryRunner.commitTransaction();
 
-            return rows[0] ?? [];
+            return rows[0] ?? null;
 
         } catch (error) {
             await queryRunner.rollbackTransaction();

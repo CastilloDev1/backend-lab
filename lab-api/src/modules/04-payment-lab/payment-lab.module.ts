@@ -13,9 +13,14 @@ import { CreatePaymentOutboxPreviewUseCase } from "./core/create-payment-outbox-
 import { ProcessOutboxEventsWorker } from "./core/process-outbox-events.worker";
 import { RabbitmqPublisher } from "./core/rabbitmq-publisher";
 import { RabbitmqConsumer } from "./core/rabbitmq-consumer";
+import { ScheduleModule } from "@nestjs/schedule";
+import { OutboxRelayUseCase } from "./core/outbox-relay.use-case";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Account, Payment, OutBoxEvent, ProcessedEvent])],
+    imports: [
+        TypeOrmModule.forFeature([Account, Payment, OutBoxEvent, ProcessedEvent]),
+        ScheduleModule.forRoot(),
+    ],
     controllers: [PaymentLabController],
     providers: [
         AccountSeederService,
@@ -23,6 +28,7 @@ import { RabbitmqConsumer } from "./core/rabbitmq-consumer";
         ProcessOutboxEventsWorker,
         RabbitmqPublisher,
         RabbitmqConsumer,
+        OutboxRelayUseCase,
     ]
 })
 export class PaymentLabModule {}
