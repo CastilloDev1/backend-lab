@@ -10,6 +10,7 @@ import { DoubleSpendingModule } from './modules/03-double-spending/double-spendi
 
 //Modulos de Escenarios evolutivos
 import { PaymentLabModule } from './modules/04-payment-lab/payment-lab.module';
+import { FileProcessingObservalityLabModule } from './modules/05-file-observability-lab/file-processing-observality-lab.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PaymentLabModule } from './modules/04-payment-lab/payment-lab.module';
     ToctouModule,
     DoubleSpendingModule,
     PaymentLabModule,
+    FileProcessingObservalityLabModule,
   ],
 })
 export class AppModule {}
