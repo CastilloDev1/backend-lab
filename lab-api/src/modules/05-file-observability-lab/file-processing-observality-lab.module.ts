@@ -7,10 +7,19 @@ import { ProcessFileProcessingJobUseCase } from "./core/process-file-processing-
 import { CreateJobExecutionEventUseCase } from "./core/create-job-execution-event.use-case";
 import { JobExecutionEventEntity } from "./domain/job-execution-event.entity";
 import { JobOperationalLogger } from "./core/job-operational-logger";
+import { JobLogIndexerService } from "./core/job-log-indexer.service";
+import { OpenSearchClientProvider } from "./core/opensearch.client";
 
 @Module({
     imports: [TypeOrmModule.forFeature([FileProcessingJobEntity, JobExecutionEventEntity])],
     controllers: [FileProcessingController],
-    providers: [CreateFileProcessingJobUseCase, ProcessFileProcessingJobUseCase, CreateJobExecutionEventUseCase, JobOperationalLogger],
+    providers: [
+        CreateFileProcessingJobUseCase,
+        ProcessFileProcessingJobUseCase,
+        CreateJobExecutionEventUseCase,
+        JobOperationalLogger,
+        JobLogIndexerService,
+        OpenSearchClientProvider,
+    ],
 })
 export class FileProcessingObservalityLabModule {}

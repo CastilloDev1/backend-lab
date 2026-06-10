@@ -34,7 +34,7 @@ export class ProcessFileProcessingJobUseCase {
         job.status = FileProcessingJobStatus.PROCESSING;
         job.startedAt = new Date();
 
-        this.jobOperationalLogger.jobStarted(job);
+        await this.jobOperationalLogger.jobStarted(job);
         await this.fileprocessingJobRepository.save(job);
 
         try {
@@ -50,7 +50,7 @@ export class ProcessFileProcessingJobUseCase {
                 'Job execution completed'
             );
 
-            this.jobOperationalLogger.jobCompleted(job);
+            await this.jobOperationalLogger.jobCompleted(job);
         } catch (error) {
             const completedAt = new Date();
             job.status = FileProcessingJobStatus.FAILED;
@@ -63,7 +63,7 @@ export class ProcessFileProcessingJobUseCase {
                 JobExecutionEventType.JOB_FAILED,
                 'Job execution failed'
             );
-            this.jobOperationalLogger.jobFailed(job);
+            await this.jobOperationalLogger.jobFailed(job);
         } finally {
             return this.fileprocessingJobRepository.save(job);
         }
