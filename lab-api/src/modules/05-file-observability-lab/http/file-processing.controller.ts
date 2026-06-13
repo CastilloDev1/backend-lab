@@ -1,11 +1,12 @@
-import { Body, Controller, Param, Post } from "@nestjs/common";
+import { Body, Controller, Param, Post, UseInterceptors } from "@nestjs/common";
 import { CreateFileProcessingJobUseCase } from "../core/create-file-processing-job.use-case";
 import { ProcessFileProcessingJobUseCase } from "../core/process-file-processing-job.use-case";
+import { HttpRequestLoggingInterceptor } from "../core/http-request-logging.interceptor";
 
 type createFileProcessingJobRequest = {
     fileName: string;
 }
-
+@UseInterceptors(HttpRequestLoggingInterceptor)
 @Controller('file-processing/jobs')
 export class FileProcessingController {
 
